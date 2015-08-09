@@ -4,8 +4,8 @@ require 'tmpdir'
 
 @temp_dir = "./lib"
 
-project = Xcodeproj::Project.new(@temp_dir + '/test.xcodeproj')
-app_target = project.new_target(:application, 'App', :ios, '8.0', project.main_group, :swift)
+`rm -rf #{@temp_dir}` if Dir.exist? @temp_dir
+`mkdir #{@temp_dir}`
 
 main_swift = <<eos
 import UIKit
@@ -46,21 +46,63 @@ test_plist = <<eos
 </plist>
 eos
 
+test_example = <<eos
+import UIKit
+import XCTest
+
+class Mpore_TEsts: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        // Put setup code here. This method is called before the invocation of each test method in the class.
+    }
+
+    override func tearDown() {
+        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        super.tearDown()
+    }
+
+    func testExample() {
+        // This is an example of a functional test case.
+        XCTAssert(true, "Pass")
+    }
+
+    func testPerformanceExample() {
+        // This is an example of a performance test case.
+        self.measureBlock() {
+            // Put the code you want to measure the time of here.
+        }
+    }
+
+}
+eos
+
 File.open(@temp_dir + '/Main.swift', 'w') { |f| f.write main_swift }
 File.open(@temp_dir + '/Tests-Info.plist', 'w') { |f| f.write main_swift }
+File.open(@temp_dir + '/Tests.swift', 'w') { |f| f.write test_example }
+
+project = Xcodeproj::Project.new(@temp_dir + '/test.xcodeproj')
+app_target = project.new_target(:application, 'App', :ios, '8.0', project.main_group, :swift)
 
 main_swift = project.main_group.new_file('./Main.swift')
 app_target.add_file_references([main_swift])
 
 test_target = project.new_target(:unit_test_bundle, 'App Tests', :ios, '8.0', project.main_group, :swift)
 
-file_name = 'test.m'
-file = project.new_file(file_name, :group)
+swift_test = project.new_file("./Tests.swift", :group)
+test_target.add_file_references([swift_test])
 
-test_target.add_file_references([file])
+# Add an info.plist to the tests target
 
+# Set up the schemes
+test_action = Xcodeproj::XCScheme::TestAction.new()
+test_ref = Xcodeproj::XCScheme::TestAction::TestableReference.new(test_target)
 
-app_target.configure_with_targets
+# might not need this
+app_test_action = Xcodeproj::XCScheme::TestAction.new()
+app_test_ref = Xcodeproj::XCScheme::TestAction::TestableReference.new(app_target)
+
+# Make the app test schemes use the right unit testing bundle
 
 project.recreate_user_schemes
 

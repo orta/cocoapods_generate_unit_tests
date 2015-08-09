@@ -15,3 +15,5 @@ bundle install
 ``` sh
 bundle exec ruby generate.rb
 ```
+
+It will generate a collection of files in `./lib`. The end goal being that you can open the generated xcodeproj and run the units tests ( or via the terminal with `xcodebuild`.)
